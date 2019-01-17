@@ -1,3 +1,4 @@
+# -*- coding=utf-8 -*-
 import sys
 
 from py12306.app import app_available_check

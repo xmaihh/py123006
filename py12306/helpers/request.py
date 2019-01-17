@@ -1,3 +1,4 @@
+# -*- coding=utf-8 -*-
 from requests.exceptions import *
 
 from py12306.helpers.func import *

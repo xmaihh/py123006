@@ -1,3 +1,4 @@
+# -*- coding=utf-8 -*-
 from py12306.app import *
 from py12306.cluster.cluster import Cluster
 from py12306.helpers.event import Event

@@ -1,4 +1,4 @@
-# coding=utf-8
+# -*- coding=utf-8 -*-
 # 查询余票
 import time
 

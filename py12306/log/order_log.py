@@ -1,3 +1,4 @@
+# -*- coding=utf-8 -*-
 from py12306.log.base import BaseLog
 from py12306.helpers.func import *
 
