@@ -1,4 +1,3 @@
-# -*- coding=utf-8 -*-
 import urllib
 
 from py12306.config import Config

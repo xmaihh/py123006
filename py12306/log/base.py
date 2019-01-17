@@ -1,4 +1,3 @@
-# coding=gbk
 import os
 import sys
 import io
@@ -16,7 +15,7 @@ class BaseLog:
     @classmethod
     def add_log(cls, content=''):
         self = cls()
-        # print('Ìí¼Ó Log Ö÷½ø³Ì{} ½ø³ÌID{}'.format(is_main_thread(), current_thread_id()))
+        # print('æ·»åŠ  Log ä¸»è¿›ç¨‹{} è¿›ç¨‹ID{}'.format(is_main_thread(), current_thread_id()))
         if is_main_thread():
             self.logs.append(content)
         else:
@@ -30,11 +29,11 @@ class BaseLog:
         from py12306.cluster.cluster import Cluster
         self = cls()
         logs = self.get_logs()
-        # Êä³öµ½ÎÄ¼ş
-        if file == None and Config().OUT_PUT_LOG_TO_FILE_ENABLED and not Const.IS_TEST:  # TODO ÎÄ¼şÎŞ·¨Ğ´ÈëÓÑºÃÌáÊ¾
+        # è¾“å‡ºåˆ°æ–‡ä»¶
+        if file == None and Config().OUT_PUT_LOG_TO_FILE_ENABLED and not Const.IS_TEST:  # TODO æ–‡ä»¶æ— æ³•å†™å…¥å‹å¥½æç¤º
             file = open(Config().OUT_PUT_LOG_TO_FILE_PATH, 'a', encoding='utf-8')
         if not file: file = None
-        # Êä³öÈÕÖ¾µ½¸÷¸ö½Úµã
+        # è¾“å‡ºæ—¥å¿—åˆ°å„ä¸ªèŠ‚ç‚¹
         if publish and self.quick_log and Config().is_cluster_enabled() and Cluster().is_ready:  #
             f = io.StringIO()
             with redirect_stdout(f):
@@ -73,7 +72,7 @@ class BaseLog:
         return self
 
     def notification(self, title, content=''):
-        # if sys.platform == 'darwin': # ²»Ì«ÓÑºÃ ÏÈ¹Ø±Õ£¬Ö®Ç°Ã»¿¼ÂÇµ½ mac ÏÂ»áÇëÇóÈ¨ÏŞ
+        # if sys.platform == 'darwin': # ä¸å¤ªå‹å¥½ å…ˆå…³é—­ï¼Œä¹‹å‰æ²¡è€ƒè™‘åˆ° mac ä¸‹ä¼šè¯·æ±‚æƒé™
         #     os.system( 'osascript -e \'tell app "System Events" to display notification "{content}" with title "{title}"\''.format(
         #             title=title, content=content))
         pass

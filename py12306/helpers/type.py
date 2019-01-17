@@ -1,4 +1,3 @@
-# -*- coding=utf-8 -*-
 from py12306.helpers.func import *
 
 

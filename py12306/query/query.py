@@ -1,4 +1,3 @@
-# -*- coding=utf-8 -*-
 from py12306.config import Config
 from py12306.cluster.cluster import Cluster
 from py12306.app import app_available_check
