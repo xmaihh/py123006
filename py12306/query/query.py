@@ -41,7 +41,8 @@ class Query:
         if auto:
             QueryLog.add_quick_log(QueryLog.MESSAGE_JOBS_DID_CHANGED).flush()
             self.refresh_jobs()
-            jobs_do(self.jobs, 'check_passengers')
+            if not Config().is_slave():
+                jobs_do(self.jobs, 'check_passengers')
 
     @classmethod
     def run(cls):
@@ -51,7 +52,7 @@ class Query:
         pass
 
     @classmethod
-    def check_before_fun(cls):
+    def check_before_run(cls):
         self = cls()
         self.init_jobs()
         self.is_ready = True

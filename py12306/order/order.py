@@ -23,7 +23,7 @@ class Order:
 
     is_need_auth_code = False
 
-    max_queue_wait = 120
+    max_queue_wait = 60 * 5  # 最大排队时长
     current_queue_wait = 0
     retry_time = 3
     wait_queue_interval = 3
@@ -58,7 +58,11 @@ class Order:
         return self.normal_order()
 
     def normal_order(self):
-        if not self.submit_order_request(): return
+        order_request_res = self.submit_order_request()
+        if order_request_res == -1:
+            return self.order_did_success()
+        elif not order_request_res:
+            return
         if not self.user_ins.request_init_dc_page(): return
         if not self.check_order_info(): return
         if not self.get_queue_count(): return
@@ -75,38 +79,50 @@ class Order:
         OrderLog.notification(OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_TITLE,
                               OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_CONTENT)
         self.send_notification()
+        return True
 
     def send_notification(self):
-        num = 0  # 通知次数
-        sustain_time = self.notification_sustain_time
+        # num = 0  # 通知次数
+        # sustain_time = self.notification_sustain_time
+        info_message = OrderLog.get_order_success_notification_info(self.query_ins)
+        normal_message = OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_EMAIL_CONTENT.format(self.order_id)
         if Config().EMAIL_ENABLED:  # 邮件通知
             Notification.send_email(Config().EMAIL_RECEIVER, OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_TITLE,
-                                    OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_EMAIL_CONTENT.format(self.order_id))
+                                    normal_message + info_message)
         if Config().DINGTALK_ENABLED:  # 钉钉通知
-            Notification.dingtalk_webhook(
-                OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_EMAIL_CONTENT.format(self.order_id))
+            Notification.dingtalk_webhook(normal_message + info_message)
         if Config().TELEGRAM_ENABLED:  # Telegram推送
-            Notification.send_to_telegram(
-                OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_EMAIL_CONTENT.format(self.order_id))
+            Notification.send_to_telegram(normal_message + info_message)
         if Config().SERVERCHAN_ENABLED:  # ServerChan通知
             Notification.server_chan(Config().SERVERCHAN_KEY, OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_TITLE,
-                                     OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_EMAIL_CONTENT.format(self.order_id))
+                                     normal_message + info_message)
         if Config().PUSHBEAR_ENABLED:  # PushBear通知
             Notification.push_bear(Config().PUSHBEAR_KEY, OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_TITLE,
-                                   OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_EMAIL_CONTENT.format(self.order_id))
-        while sustain_time:  # TODO 后面直接查询有没有待支付的订单就可以
-            num += 1
-            if Config().NOTIFICATION_BY_VOICE_CODE:  # 语音通知
-                OrderLog.add_quick_log(OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_VOICE_CODE_START_SEND.format(num))
-                Notification.voice_code(Config().NOTIFICATION_VOICE_CODE_PHONE, self.user_ins.get_name(),
-                                        OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_VOICE_CODE_CONTENT.format(
-                                            self.query_ins.left_station, self.query_ins.arrive_station))
+                                   normal_message + info_message)
+
+        if Config().NOTIFICATION_BY_VOICE_CODE:  # 语音通知
+            if Config().NOTIFICATION_VOICE_CODE_TYPE == 'dingxin':
+                voice_info = {
+                    'left_station': self.query_ins.left_station,
+                    'arrive_station': self.query_ins.arrive_station,
+                    'set_type': self.query_ins.current_seat_name,
+                    'orderno': self.order_id
+                }
             else:
-                break
-            sustain_time -= self.notification_interval
-            sleep(self.notification_interval)
+                voice_info = OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_VOICE_CODE_CONTENT.format(
+                    self.query_ins.left_station, self.query_ins.arrive_station)
+            OrderLog.add_quick_log(OrderLog.MESSAGE_ORDER_SUCCESS_NOTIFICATION_OF_VOICE_CODE_START_SEND)
+            Notification.voice_code(Config().NOTIFICATION_VOICE_CODE_PHONE, self.user_ins.get_name(), voice_info)
+        # 取消循环发送通知
+        # while sustain_time:  # TODO 后面直接查询有没有待支付的订单就可以
+        #     num += 1
+        #     else:
+        #         break
+        #     sustain_time -= self.notification_interval
+        #     sleep(self.notification_interval)
 
         OrderLog.add_quick_log(OrderLog.MESSAGE_JOB_CLOSED).flush()
+        return True
 
     def submit_order_request(self):
         data = {
@@ -125,9 +141,13 @@ class Order:
             return True
         else:
             if (str(result.get('messages', '')).find('未处理') >= 0):  # 未处理订单
-                stay_second(self.retry_time)
+                # 0125 增加排队时长到 5 分钟之后，更多的是 排队失败，得通过拿到订单列表才能确认，再打个 TODO
+                # self.order_id = 0  # 需要拿到订单号 TODO
+                # return -1
+                pass
             OrderLog.add_quick_log(
-                OrderLog.MESSAGE_SUBMIT_ORDER_REQUEST_FAIL.format(result.get('messages', CommonLog.MESSAGE_RESPONSE_EMPTY_ERROR))).flush()
+                OrderLog.MESSAGE_SUBMIT_ORDER_REQUEST_FAIL.format(
+                    result.get('messages', CommonLog.MESSAGE_RESPONSE_EMPTY_ERROR))).flush()
         return False
 
     def check_order_info(self):
@@ -226,9 +246,12 @@ class Order:
             ticket = result.get('data.ticket').split(',')  # 余票列表
             # 这里可以判断 是真实是 硬座还是无座，避免自动分配到无座
             ticket_number = ticket[0]  # 余票
-            if ticket_number != '充足' or int(ticket_number) <= 0:
+            if ticket_number != '充足' and int(ticket_number) <= 0:
                 if self.query_ins.current_seat == SeatType.NO_SEAT:  # 允许无座
                     ticket_number = ticket[1]
+                if not int(ticket_number): # 跳过无座
+                    OrderLog.add_quick_log(OrderLog.MESSAGE_GET_QUEUE_INFO_NO_SEAT).flush()
+                    return False
 
             if result.get('data.op_2') == 'true':
                 OrderLog.add_quick_log(OrderLog.MESSAGE_GET_QUEUE_LESS_TICKET).flush()
@@ -249,17 +272,17 @@ class Order:
         确认排队
         passengerTicketStr
         oldPassengerStr
-        randCode	
+        randCode
         purpose_codes	00
         key_check_isChange	FEE6C6634A3EAA93E1E6CFC39A99E555A92E438436F18AFF78837CDB
         leftTicketStr	CmDJZYrwUoJ1jFNonIgPzPFdMBvSSE8xfdUwvb2lq8CCWn%2Bzk1vM3roJaHk%3D
         train_location	QY
-        choose_seats	
+        choose_seats
         seatDetailType	000
         whatsSelect	1
         roomType	00
         dwAll	N
-        _json_att	
+        _json_att
         REPEAT_SUBMIT_TOKEN	0977caf26f25d1da43e3213eb35ff87c
         :return:
         """
@@ -310,7 +333,7 @@ class Order:
         排队查询
         random	1546849953542
         tourFlag	dc
-        _json_att	
+        _json_att
         REPEAT_SUBMIT_TOKEN	0977caf26f25d1da43e3213eb35ff87c
         :return:
         """
@@ -361,10 +384,12 @@ class Order:
                         if wait_time == -2 or wait_time == -3:  # -2 失败 -3 订单已撤销
                             OrderLog.add_quick_log(
                                 OrderLog.MESSAGE_QUERY_ORDER_WAIT_TIME_FAIL.format(result_data.get('msg'))).flush()
+                            return False
                         else:  # 未知原因
                             OrderLog.add_quick_log(
                                 OrderLog.MESSAGE_QUERY_ORDER_WAIT_TIME_FAIL.format(
                                     result_data.get('msg', wait_time))).flush()
+                            return False
 
                 elif result_data.get('msg'):  # 失败 对不起，由于您取消次数过多，今日将不能继续受理您的订票请求。1月8日您可继续使用订票功能。
                     # TODO 需要增加判断 直接结束
@@ -376,6 +401,7 @@ class Order:
             elif result.get('messages') or result.get('validateMessages'):
                 OrderLog.add_quick_log(OrderLog.MESSAGE_QUERY_ORDER_WAIT_TIME_FAIL.format(
                     result.get('messages', result.get('validateMessages')))).flush()
+                return False
             else:
                 pass
             OrderLog.add_quick_log(OrderLog.MESSAGE_QUERY_ORDER_WAIT_TIME_INFO.format(self.queue_num)).flush()
