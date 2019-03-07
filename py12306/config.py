@@ -65,6 +65,10 @@ class Config:
     TELEGRAM_ENABLED = 0
     TELEGRAM_BOT_API_URL = ''
 
+    # Bark 推送配置
+    BARK_ENABLED = 0
+    BARK_PUSH_URL = ''
+
     # ServerChan和PushBear配置
     SERVERCHAN_ENABLED = 0
     SERVERCHAN_KEY = '8474-ca071ADSFADSF'
@@ -89,6 +93,9 @@ class Config:
     CDN_CHECK_TIME_OUT = 2
     CDN_ITEM_FILE = PROJECT_DIR + 'data/cdn.txt'
     CDN_ENABLED_AVAILABLE_ITEM_FILE = QUERY_DATA_DIR + 'available.json'
+
+    # Default time out
+    TIME_OUT_OF_REQUEST = 5
 
     envs = []
     retry_time = 5
