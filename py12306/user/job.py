@@ -123,6 +123,7 @@ class UserJob:
             'password': self.password,
             'appid': 'otn'
         }
+        self.request_device_id()
         answer = AuthCode.get_auth_code(self.session)
         data['answer'] = answer
         response = self.session.post(API_BASE_LOGIN.get('url'), data)
@@ -174,6 +175,170 @@ class UserJob:
             return result.get('username')
         # TODO 处理获取失败情况
         return False
+
+    def request_device_id(self):
+        """
+        获取加密后的浏览器特征 ID
+        :return:
+        """
+        # params = {"algID": self.request_alg_id(), "timestamp": int(time.time() * 1000)}
+        # params = dict(params, **self._get_hash_code_params())
+        params = {"algID": "DSMUHpqg2c",
+                  "hashCode": "7D2olfNltplDRYYVR5GfyPVdYWm_PQvOWVmvaWUpOJI",
+                  "FMQw": "0",
+                  "q4f3": "zh-CN",
+                  "VySQ": "FGE8-ztrZHjoQKFkw9FzanJmGHUMxCjZ",
+                  "VPIf": "1",
+                  "custID": "133",
+                  "VEek": "unknown",
+                  "dzuS": "29.0 r0",
+                  "yD16": "0",
+                  "EOQP": "eea1c671b27b7f53fb4ed098696f3560",
+                  "lEnu": "3232235939",
+                  "jp76": "a5b2ffe86c07bdcd9a3445c81d946c92",
+                  "hAqN": "Win32",
+                  "platform": "WEB",
+                  "ks0Q": "d82d0dd98d93e709d91f86348e2a0e86",
+                  "TeRS": "1042x1920",
+                  "tOHY": "24xx1080x1920",
+                  "Fvje": "i1l1o1s1",
+                  "q5aJ": "-8",
+                  "wNLf": "99115dfb07133750ba677d055874de87",
+                  "0aew": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36",
+                  "E3gR": "c55529c990fcaabc078c4304eadf4ccb",
+                  "timestamp": int(time.time() * 1000)}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36"}
+        self.session.headers.update(headers)
+        response = self.session.get(API_GET_BROWSER_DEVICE_ID, params=params)
+        if response.text.find('callbackFunction') >= 0:
+            result = response.text[18:-2]
+            try:
+                result = json.loads(result)
+                self.session.cookies.update({
+                    'RAIL_EXPIRATION': result.get('exp'),
+                    'RAIL_DEVICEID': result.get('dfp'),
+                })
+            except:
+                return False
+
+    def request_alg_id(self):
+        response = self.session.get("https://kyfw.12306.cn/otn/HttpZF/GetJS")
+        result = re.search(r'algID\\x3d(.*?)\\x26', response.text)
+        try:
+            return result.group(1)
+        except (IndexError, AttributeError) as e:
+            pass
+        return ""
+
+    def _get_hash_code_params(self):
+        from collections import OrderedDict
+        data = {
+            'adblock': '0',
+            'browserLanguage': 'en-US',
+            'cookieEnabled': '1',
+            'custID': '133',
+            'doNotTrack': 'unknown',
+            'flashVersion': '0',
+            'javaEnabled': '0',
+            'jsFonts': 'c227b88b01f5c513710d4b9f16a5ce52',
+            'localCode': '3232236206',
+            'mimeTypes': '52d67b2a5aa5e031084733d5006cc664',
+            'os': 'MacIntel',
+            'platform': 'WEB',
+            'plugins': 'd22ca0b81584fbea62237b14bd04c866',
+            'scrAvailSize': str(random.randint(500, 1000)) + 'x1920',
+            'srcScreenSize': '24xx1080x1920',
+            'storeDb': 'i1l1o1s1',
+            'timeZone': '-8',
+            'touchSupport': '99115dfb07133750ba677d055874de87',
+            'userAgent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.' + str(
+                random.randint(
+                    5000, 7000)) + '.0 Safari/537.36',
+            'webSmartID': 'f4e3b7b14cc647e30a6267028ad54c56',
+        }
+        data_trans = {
+            'browserVersion': 'd435',
+            'touchSupport': 'wNLf',
+            'systemLanguage': 'e6OK',
+            'scrWidth': 'ssI5',
+            'openDatabase': 'V8vl',
+            'scrAvailSize': 'TeRS',
+            'hasLiedResolution': '3neK',
+            'hasLiedOs': 'ci5c',
+            'timeZone': 'q5aJ',
+            'userAgent': '0aew',
+            'userLanguage': 'hLzX',
+            'jsFonts': 'EOQP',
+            'scrAvailHeight': '88tV',
+            'browserName': '-UVA',
+            'cookieCode': 'VySQ',
+            'online': '9vyE',
+            'scrAvailWidth': 'E-lJ',
+            'flashVersion': 'dzuS',
+            'scrDeviceXDPI': '3jCe',
+            'srcScreenSize': 'tOHY',
+            'storeDb': 'Fvje',
+            'doNotTrack': 'VEek',
+            'mimeTypes': 'jp76',
+            'sessionStorage': 'HVia',
+            'cookieEnabled': 'VPIf',
+            'os': 'hAqN',
+            'hasLiedLanguages': 'j5po',
+            'hasLiedBrowser': '2xC5',
+            'webSmartID': 'E3gR',
+            'appcodeName': 'qT7b',
+            'javaEnabled': 'yD16',
+            'plugins': 'ks0Q',
+            'appMinorVersion': 'qBVW',
+            'cpuClass': 'Md7A',
+            'indexedDb': '3sw-',
+            'adblock': 'FMQw',
+            'localCode': 'lEnu',
+            'browserLanguage': 'q4f3',
+            'scrHeight': '5Jwy',
+            'localStorage': 'XM7l',
+            'historyList': 'kU5z',
+            'scrColorDepth': "qmyu"
+        }
+        data = OrderedDict(data)
+        data_str = ''
+        params = {}
+        for key, item in data.items():
+            data_str += key + item
+            key = data_trans[key] if key in data_trans else key
+            params[key] = item
+        data_str = self._encode_data_str(data_str)
+        data_str_len = len(data_str)
+        data_str_f = int(data_str_len / 3) if data_str_len % 3 == 0 else int(data_str_len / 3) + 1
+        if data_str_len >= 3:
+            data_str = data_str[data_str_f:2 * data_str_f] + data_str[2 * data_str_f:data_str_len] + data_str[
+                                                                                                     0: data_str_f]
+        data_str = data_str[::-1]
+        data_str_tmp = ""
+        for e in range(0, len(data_str)):
+            data_str_code = ord(data_str[e])
+            data_str_tmp += chr(0) if data_str_code == 127 else chr(data_str_code + 1)
+
+        data_str = self._encode_data_str(data_str_tmp)
+        data_str = self._encode_string(data_str)
+        params['hashCode'] = data_str
+        return params
+
+    def _encode_data_str(self, data_str):
+        data_str_len = len(data_str)
+        data_str_len_tmp = int(data_str_len / 3) if data_str_len % 3 == 0 else int(data_str_len / 3) + 1
+        if data_str_len >= 3:
+            data_str_e = data_str[0:data_str_len_tmp]
+            data_str_f = data_str[data_str_len_tmp:2 * data_str_len_tmp]
+            return data_str[2 * data_str_len_tmp:data_str_len] + data_str_e + data_str_f
+        return data_str
+
+    def _encode_string(self, str):
+        import hashlib
+        import base64
+        result = base64.b64encode(hashlib.sha256(str.encode()).digest()).decode()
+        return result.replace('+', '-').replace('/', '_').replace('=', '')
 
     def login_did_success(self):
         """
@@ -312,7 +477,7 @@ class UserJob:
                 UserLog.MESSAGE_GET_USER_PASSENGERS_FAIL.format(
                     result.get('messages', CommonLog.MESSAGE_RESPONSE_EMPTY_ERROR), self.retry_time)).flush()
             if Config().is_slave():
-                self.load_user_from_remote() # 加载最新 cookie
+                self.load_user_from_remote()  # 加载最新 cookie
             stay_second(self.retry_time)
             return self.get_user_passengers()
 

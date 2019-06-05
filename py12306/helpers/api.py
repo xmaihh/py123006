@@ -40,11 +40,14 @@ API_GET_QUEUE_COUNT = BASE_URL_OF_12306 + '/otn/confirmPassenger/getQueueCount'
 API_CONFIRM_SINGLE_FOR_QUEUE = BASE_URL_OF_12306 + '/otn/confirmPassenger/confirmSingleForQueue'
 API_QUERY_ORDER_WAIT_TIME = BASE_URL_OF_12306 + '/otn/confirmPassenger/queryOrderWaitTime?{}'  # 排队查询
 API_QUERY_INIT_PAGE = BASE_URL_OF_12306 + '/otn/leftTicket/init'
+API_GET_BROWSER_DEVICE_ID = BASE_URL_OF_12306 + '/otn/HttpZF/logdevice'
+
 
 API_NOTIFICATION_BY_VOICE_CODE = 'http://ali-voice.showapi.com/sendVoice?'
 API_NOTIFICATION_BY_VOICE_CODE_DINGXIN = 'http://yuyin2.market.alicloudapi.com/dx/voice_notice'
 
-API_FREE_CODE_QCR_API = 'http://60.205.200.159/api'
+# API_FREE_CODE_QCR_API = 'http://60.205.200.159/api'  # 19-03-07 接口已失效
+API_FREE_CODE_QCR_API = 'https://12306.jiedanba.cn/api/v2/getCheck'
 API_FREE_CODE_QCR_API_CHECK = 'http://check.huochepiao.360.cn/img_vcode'
 
 API_CHECK_CDN_AVAILABLE = 'https://{}/otn/dynamicJs/omseuuq'
